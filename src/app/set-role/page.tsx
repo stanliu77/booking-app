@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Space, Typography, message } from "antd";
+import { Card, Space, Typography, message } from "antd";
 import { UserOutlined, ShopOutlined } from "@ant-design/icons";
 
 export default function SetRolePage() {
