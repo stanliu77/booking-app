@@ -1,33 +1,31 @@
-// src/app/api/set-role/route.ts
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { Role } from "@prisma/client";
 
 export async function POST(req: Request) {
-  const user = await currentUser(); // 
-  const body = await req.json();
-  const { role } = body;
+  const { userId } = await auth(); // Clerk 的 userId，其实就是你保存到 clerkId 的值
 
-  if (!user || !user.id || !["USER", "PROVIDER"].includes(role)) {
-    return NextResponse.json({ error: "Invalid" }, { status: 400 });
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const existing = await db.user.findUnique({
-    where: { clerkId: user.id },
+  const { role } = await req.json();
+
+  const user = await db.user.findUnique({
+    where: { clerkId: userId }, // ✅ 用 clerkId 不是 id！
   });
 
-  if (existing) {
-    return NextResponse.json({ error: "Already set" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const newUser = await db.user.create({
-    data: {
-      clerkId: user.id,
-      email: user.emailAddresses[0].emailAddress, // 
-      role: role as Role,
-    },
+  const updatedUser = await db.user.update({
+    where: { clerkId: userId },
+    data: { role },
   });
 
-  return NextResponse.json({ success: true, user: newUser });
+  return NextResponse.json({
+    message: "Role updated successfully",
+    role: updatedUser.role,
+  });
 }

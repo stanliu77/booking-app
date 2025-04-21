@@ -11,7 +11,7 @@ export default async function Home() {
   }
 
   const existingUser = await db.user.findUnique({
-    where: { clerkId: user.id },
+    where: { id: user.id },
   });
 
   if (!existingUser) {
