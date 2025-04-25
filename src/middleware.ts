@@ -1,10 +1,11 @@
 // src/middleware.ts
-import { clerkMiddleware, getAuth } from "@clerk/nextjs/server";
+import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+export async function middleware(req: NextRequest) {
+  const { userId } = getAuth(req);  // ✅ Next.js 15 使用 getAuth(req)
 
   if (!userId) return NextResponse.next();
 
@@ -13,12 +14,11 @@ export default clerkMiddleware(async (auth, req) => {
   // 不拦截 /set-role 页面本身，避免死循环
   if (url.pathname === "/set-role") return NextResponse.next();
 
-  // 查询用户
+  // 查询数据库中是否已设置角色
   const existingUser = await db.user.findUnique({
     where: { clerkId: userId },
   });
 
-  // 如果没有设置角色，跳转去设置
   if (existingUser && !existingUser.role) {
     const newUrl = req.nextUrl.clone();
     newUrl.pathname = "/set-role";
@@ -26,7 +26,7 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
