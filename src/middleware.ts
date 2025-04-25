@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = auth();
+  const { userId } = await auth();
 
   if (!userId) return NextResponse.next();
 

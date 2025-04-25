@@ -2,7 +2,13 @@
 
 import { Button, message } from "antd";
 
-export default function PayButton({ appointment }: { appointment: any }) {
+export default function PayButton({
+  appointment,
+  userId,
+}: {
+  appointment: any;
+  userId: string;
+}) {
   const handlePay = async () => {
     try {
       const res = await fetch("/api/checkout", {
@@ -13,11 +19,11 @@ export default function PayButton({ appointment }: { appointment: any }) {
         body: JSON.stringify({
           serviceName: appointment.service.name,
           amount: appointment.service.price,
-          userId: appointment.userId,
+          userId, // ✅ 直接传 userId
           providerId: appointment.providerId,
           serviceId: appointment.serviceId,
           datetime: appointment.datetime,
-          appointmentId: appointment.id, // ✅ 一定要传 appointmentId！
+          appointmentId: appointment.id,
         }),
       });
 
@@ -27,7 +33,6 @@ export default function PayButton({ appointment }: { appointment: any }) {
         return;
       }
 
-      // ✅ 跳转至 Stripe 支付页
       window.location.href = data.url;
     } catch (error) {
       console.error("💥 Payment error:", error);
