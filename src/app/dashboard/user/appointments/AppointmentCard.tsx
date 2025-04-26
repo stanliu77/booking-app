@@ -35,7 +35,7 @@ export default function AppointmentCard({ appointment }: { appointment: any }) {
       <h3>{appointment.service.name}</h3>
       <p>📅 {new Date(appointment.datetime).toLocaleString()}</p>
       <p>💲 ${appointment.service.price}</p>
-      <p>👤 Provider: {appointment.provider.email}</p>
+      <p>👤 Provider: {appointment.provider.fullName || appointment.provider.email}</p>
       <p>Status: {formatStatus(appointment.status)}</p>
       <p>Payment: {appointment.isPaid ? "💰 Paid" : "❌ Unpaid"}</p>
 

@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-  const { userId } = await auth(); // Clerk 的 userId，其实就是你保存到 clerkId 的值
+  const { userId } = await auth();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,12 +11,32 @@ export async function POST(req: Request) {
 
   const { role } = await req.json();
 
-  const user = await db.user.findUnique({
-    where: { clerkId: userId }, // ✅ 用 clerkId 不是 id！
+  let user = await db.user.findUnique({
+    where: { clerkId: userId },
   });
 
   if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    // ✅ 分两步调用 Clerk
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(userId);
+    const email = clerkUser.emailAddresses[0]?.emailAddress;
+
+    if (!email) {
+      return NextResponse.json({ error: "No valid email found" }, { status: 400 });
+    }
+
+    user = await db.user.create({
+      data: {
+        clerkId: userId,
+        email,
+        role,
+      },
+    });
+
+    return NextResponse.json({
+      message: "User created successfully",
+      role: user.role,
+    });
   }
 
   const updatedUser = await db.user.update({
