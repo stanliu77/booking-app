@@ -1,5 +1,4 @@
-// app/dashboard/user/page.tsx
-import { auth, clerkClient } from "@clerk/nextjs/server"; // ✅ 这是对的
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/app/lib/db";
 import { Layout, Row, Col, Card, Button } from "antd";
 import Link from "next/link";
@@ -66,11 +65,12 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
         pageSize={pageSize}
       />
 
-      <Row gutter={24}>
-        <Col span={18}>
+      <Row gutter={[24, 24]}>
+        {/* 服务列表 */}
+        <Col xs={24} md={16}>
           <Row gutter={[16, 16]}>
             {services.map((s) => (
-              <Col span={12} key={s.id}>
+              <Col key={s.id} xs={24} sm={12} md={12}>
                 <Card
                   cover={
                     s.imageUrl ? (
@@ -88,12 +88,13 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
                     ) : null
                   }
                   title={s.name}
-                  extra={<span>${s.price}</span>}
+                  extra={<span style={{ fontWeight: "bold" }}>${s.price}</span>}
                   hoverable
+                  style={{ height: "100%" }}
                 >
                   <p>{s.description}</p>
                   <p>⏱ {s.duration} mins</p>
-                  <Button type="link">
+                  <Button type="link" block>
                     <Link href={`/dashboard/user/create?serviceId=${s.id}`}>
                       Book Now
                     </Link>
@@ -104,19 +105,12 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
           </Row>
         </Col>
 
-        <Col span={6}>
+        {/* 个人菜单，只保留 My Appointments */}
+        <Col xs={24} md={8}>
           <Card title="📂 My Menu">
             <p>
               <Link href="/dashboard/user/appointments">
                 📅 My Appointments
-              </Link>
-            </p>
-            <p>
-              <Link href="/dashboard/user/reviews">✍️ Reviews To Write</Link>
-            </p>
-            <p>
-              <Link href="/dashboard/user/create">
-                ➕ Create New Appointment
               </Link>
             </p>
           </Card>

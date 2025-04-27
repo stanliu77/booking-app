@@ -39,9 +39,42 @@ export default async function ProviderDashboard() {
     <Layout style={{ minHeight: "100vh" }}>
       <ProviderNavbar />
       <ProviderAppointmentClient
-        pending={pending.map((a) => ({ ...a, datetime: a.datetime.toISOString() }))}
-        accepted={accepted.map((a) => ({ ...a, datetime: a.datetime.toISOString() }))}
-        rejected={rejected.map((a) => ({ ...a, datetime: a.datetime.toISOString() }))}
+        pending={pending.map((a) => ({
+          id: a.id,
+          datetime: a.datetime.toISOString(),
+          isPaid: a.isPaid,
+          isCompleted: a.isCompleted,
+          status: a.status,
+          user: {
+            id: a.user.id,
+            clerkId: a.user.clerkId,
+            email: a.user.email,
+          },
+        }))}
+        accepted={accepted.map((a) => ({
+          id: a.id,
+          datetime: a.datetime.toISOString(),
+          isPaid: a.isPaid,
+          isCompleted: a.isCompleted,
+          status: a.status,
+          user: {
+            id: a.user.id,
+            clerkId: a.user.clerkId,
+            email: a.user.email,
+          },
+        }))}
+        rejected={rejected.map((a) => ({
+          id: a.id,
+          datetime: a.datetime.toISOString(),
+          isPaid: a.isPaid,
+          isCompleted: a.isCompleted,
+          status: a.status,
+          user: {
+            id: a.user.id,
+            clerkId: a.user.clerkId,
+            email: a.user.email,
+          },
+        }))}
       />
     </Layout>
   );
