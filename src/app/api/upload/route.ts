@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { uploadImage } from "@/lib/cloudinary"; // ✅ 引入 cloudinary 上传函数
-import { randomUUID } from "crypto";
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -10,15 +9,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file received" }, { status: 400 });
   }
 
-  // 把文件内容读成 buffer
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // 生成一个随机的临时文件名
-  const tempFilename = `/tmp/${Date.now()}-${randomUUID()}-${file.name}`;
-
-  // 调用上传到 Cloudinary
-  const result = await uploadImage(tempFilename, buffer);
-
-  // 返回 Cloudinary 地址
-  return NextResponse.json({ url: result.secure_url });
+  try {
+    const result = await uploadImage(buffer);
+    const secureUrl = (result as any).secure_url;
+    return NextResponse.json({ url: secureUrl });
+  } catch (error: any) {
+    console.error("Upload error:", error);
+    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+  }
 }
