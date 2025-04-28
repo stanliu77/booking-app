@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
-import { randomUUID } from "crypto";
+
+// 👇 记得加 cloudinary 的初始化！
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -14,13 +20,14 @@ export async function POST(req: Request) {
 
   try {
     const uploadResult = await new Promise<any>((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "uploads" }, // ✅ 可选，把图统一放 uploads 文件夹
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "uploads" }, 
         (error, result) => {
           if (error) reject(error);
           else resolve(result);
         }
-      ).end(buffer); // 👈 关键！直接 end(buffer) 传上去
+      );
+      stream.end(buffer); // 👈 这一行不能省，发buffer
     });
 
     return NextResponse.json({ url: uploadResult.secure_url });
