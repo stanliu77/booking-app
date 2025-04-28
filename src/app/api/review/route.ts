@@ -11,19 +11,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const client = await clerkClient();
-  const { emailAddresses } = await client.users.getUser(userId);
-  const email = emailAddresses[0]?.emailAddress || "";
-
-  if (!appointmentId || !rating || !comment) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-  }
-
-  if (rating < 1 || rating > 5) {
-    return NextResponse.json({ error: "Rating must be between 1 and 5" }, { status: 400 });
-  }
-
   try {
+    const client = await clerkClient();  // 先拿 client
+    const user = await client.users.getUser(userId);  // 再拿 user
+    const email = user.emailAddresses[0]?.emailAddress || ""; // 再拿 email
+
+
+    if (!appointmentId || !rating || !comment) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return NextResponse.json({ error: "Rating must be between 1 and 5" }, { status: 400 });
+    }
+
     const dbUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     const existing = await prisma.review.findFirst({
       where: {
         userId: dbUser.id,
-        serviceId: appointment.serviceId!,
+        serviceId: appointment.serviceId,
       },
     });
 
@@ -52,26 +53,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "You have already reviewed this service" }, { status: 409 });
     }
 
-    // ✅ 先创建 Review
     const review = await prisma.review.create({
       data: {
-        user: { connect: { email } },
-        service: { connect: { id: appointment.serviceId! } },
+        userId: dbUser.id,
+        serviceId: appointment.serviceId,
         rating,
         comment,
       },
     });
 
-    // ✅ 创建完之后，重新计算该服务的平均评分
     const aggregate = await prisma.review.aggregate({
-      where: { serviceId: appointment.serviceId! },
+      where: { serviceId: appointment.serviceId },
       _avg: { rating: true },
     });
 
     const averageRating = aggregate._avg.rating || 0;
 
     await prisma.service.update({
-      where: { id: appointment.serviceId! },
+      where: { id: appointment.serviceId },
       data: { rating: averageRating },
     });
 

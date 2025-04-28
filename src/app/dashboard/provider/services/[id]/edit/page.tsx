@@ -60,20 +60,21 @@ export default function EditServicePage() {
 
   const onFinish = async (values: any) => {
     try {
-      const imageUrl =
+      const imageUrlString =
         Array.isArray(values.imageUrl) && values.imageUrl.length > 0
-          ? values.imageUrl[0].url
+          ? values.imageUrl[0]?.url
           : undefined;
 
       await axios.put(`/api/services/${id}`, {
         ...values,
-        imageUrl,
+        imageUrl: imageUrlString,
         timeSlots: values.timeSlots.map((slot: any) => ({
           start: slot.time[0].toISOString(),
           end: slot.time[1].toISOString(),
         })),
       });
-      message.success("Service updated");
+
+      message.success("Service updated successfully");
       router.push("/dashboard/provider/services");
     } catch (err) {
       console.error(err);
@@ -81,104 +82,122 @@ export default function EditServicePage() {
     }
   };
 
+  const normFile = (e: any) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
+
   return (
     <>
-    <ProviderNavbar/>
-    <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
-      <Title level={3}>Edit Service</Title>
+      <ProviderNavbar/>
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: 24 }}>
+        <Title level={3}>Edit Service</Title>
 
-      <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item label="Service Name" required>
-          <Form.Item name="name" noStyle>
-            <Input disabled />
+        <Form form={form} layout="vertical" onFinish={onFinish}>
+          <Form.Item label="Service Name" required>
+            <Form.Item name="name" noStyle>
+              <Input disabled />
+            </Form.Item>
           </Form.Item>
-        </Form.Item>
 
-        <Form.Item label="Description" name="description" rules={[{ required: true }]}>
-          <Input.TextArea rows={3} />
-        </Form.Item>
+          <Form.Item label="Description" name="description" rules={[{ required: true }]}>
+            <Input.TextArea rows={3} />
+          </Form.Item>
 
-        <Form.Item label="Price" name="price" rules={[{ required: true }]}>
-          <InputNumber min={0} addonAfter="$" style={{ width: "100%" }} />
-        </Form.Item>
+          <Form.Item label="Price" name="price" rules={[{ required: true }]}>
+            <InputNumber min={0} addonAfter="$" style={{ width: "100%" }} />
+          </Form.Item>
 
-        <Form.Item label="Duration (minutes)" name="duration" rules={[{ required: true }]}>
-          <InputNumber min={5} max={240} style={{ width: "100%" }} />
-        </Form.Item>
+          <Form.Item label="Duration (minutes)" name="duration" rules={[{ required: true }]}>
+            <InputNumber min={5} max={240} style={{ width: "100%" }} />
+          </Form.Item>
 
-        <Form.Item
-          label="Image"
-          name="imageUrl"
-          valuePropName="fileList"
-          getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-        >
-          <Upload
-            listType="picture-card"
-            accept="image/*"
-            customRequest={async ({ file, onSuccess }) => {
-              const formData = new FormData();
-              formData.append("file", file as Blob);
-
-              const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-              });
-
-              const data = await res.json();
-              const newFile: UploadFile = {
-                uid: (file as any).uid,
-                name: (file as any).name,
-                url: data.url,
-                status: "done",
-              };
-
-              const current = form.getFieldValue("imageUrl") || [];
-              form.setFieldsValue({ imageUrl: [newFile] });
-              onSuccess?.(data, file);
-            }}
+          <Form.Item
+            label="Image"
+            name="imageUrl"
+            valuePropName="fileList"
+            getValueFromEvent={normFile}
+            rules={[{ required: true, message: "Please upload an image" }]}
           >
-            {!(form.getFieldValue("imageUrl")?.length >= 1) && (
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Upload</div>
-              </div>
+            <Upload
+              name="file"
+              listType="picture-card"
+              accept="image/*"
+              customRequest={async ({ file, onSuccess }) => {
+                const formData = new FormData();
+                formData.append("file", file as Blob);
+
+                const res = await fetch("/api/upload", {
+                  method: "POST",
+                  body: formData,
+                });
+
+                const data = await res.json();
+                const newFile: UploadFile = {
+                  uid: (file as any).uid,
+                  name: (file as any).name,
+                  url: data.url,
+                  status: "done",
+                };
+
+                form.setFieldsValue({ imageUrl: [newFile] });
+                onSuccess?.(data, file);
+              }}
+              fileList={form.getFieldValue("imageUrl") || []}
+              onChange={({ fileList }) => {
+                const updatedList = fileList.map(file => {
+                  if (file.response?.url) {
+                    return { ...file, url: file.response.url };
+                  }
+                  return file;
+                });
+                form.setFieldsValue({ imageUrl: updatedList });
+              }}
+              showUploadList={{ showPreviewIcon: false }}
+            >
+              {!(form.getFieldValue("imageUrl")?.length >= 1) && (
+                <div>
+                  <UploadOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              )}
+            </Upload>
+          </Form.Item>
+
+          <Form.List name="timeSlots">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "time"]}
+                      rules={[{ required: true, message: "Please select time range" }]}
+                    >
+                      <DatePicker.RangePicker showTime />
+                    </Form.Item>
+
+                    <MinusCircleOutlined onClick={() => remove(name)} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />}>
+                    Add Time Slot
+                  </Button>
+                </Form.Item>
+              </>
             )}
-          </Upload>
-        </Form.Item>
+          </Form.List>
 
-        <Form.List name="timeSlots">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map(({ key, name, ...restField }) => (
-                <Space key={key} align="baseline" style={{ display: "flex", marginBottom: 8 }}>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "time"]}
-                    rules={[{ required: true, message: "Please select time range" }]}
-                  >
-                    <DatePicker.RangePicker showTime />
-                  </Form.Item>
-
-                  <MinusCircleOutlined onClick={() => remove(name)} />
-                </Space>
-              ))}
-
-              <Form.Item>
-                <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />}>
-                  Add Time Slot
-                </Button>
-              </Form.Item>
-            </>
-          )}
-        </Form.List>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit">
-            Update Service
-          </Button>
-        </Form.Item>
-      </Form>
-    </div>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Update Service
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
     </>
   );
 }

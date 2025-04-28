@@ -34,13 +34,16 @@ model Appointment {
   status     AppointmentStatus @default(PENDING)
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
-
+  isPaid     Boolean           @default(false)
+  isCompleted Boolean          @default(false)
+  
+  paymentIntentId String?       // ✅ 新增！用于退款识别
+  
   user     User     @relation("UserAppointments", fields: [userId], references: [id])
   provider User     @relation("ProviderAppointments", fields: [providerId], references: [id])
-  service  Service @relation("ServiceAppointments", fields: [serviceId], references: [id])
-  isPaid Boolean @default(false)
-  isCompleted Boolean @default(false)
+  service  Service  @relation("ServiceAppointments", fields: [serviceId], references: [id])
 }
+
 
 enum AppointmentStatus {
   PENDING

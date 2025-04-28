@@ -1,8 +1,7 @@
-// app/api/appointments/route.ts
-
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/db";
+import { sendAppointmentEmail } from "@/lib/email"; // ✅ 加这一行
 
 export async function POST(req: Request) {
   const { userId: clerkUserId } = await auth(); // Clerk 的 ID
@@ -40,6 +39,24 @@ export async function POST(req: Request) {
         datetime: new Date(datetime),
       },
     });
+
+    // ✅ 新增：创建预约成功后，给商家发邮件通知
+    const provider = await prisma.user.findUnique({
+      where: { id: providerId },
+    });
+
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (provider?.email && service?.name) {
+      await sendAppointmentEmail({
+        to: provider.email,
+        type: "new",
+        serviceName: service.name,
+        appointmentDate: new Date(datetime).toLocaleString(),
+      });
+    }
 
     return NextResponse.json({ id: appointment.id }, { status: 201 });
   } catch (error) {
