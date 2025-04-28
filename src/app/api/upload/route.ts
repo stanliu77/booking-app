@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { uploadImage } from "@/lib/cloudinary";
+import { v2 as cloudinary } from "cloudinary";
+import { randomUUID } from "crypto";
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -12,11 +13,19 @@ export async function POST(req: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   try {
-    const result = await uploadImage(buffer);
-    const secureUrl = (result as any).secure_url;
-    return NextResponse.json({ url: secureUrl });
-  } catch (error: any) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: "uploads" }, // ✅ 可选，把图统一放 uploads 文件夹
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(buffer); // 👈 关键！直接 end(buffer) 传上去
+    });
+
+    return NextResponse.json({ url: uploadResult.secure_url });
+  } catch (err) {
+    console.error("Upload error:", err);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
