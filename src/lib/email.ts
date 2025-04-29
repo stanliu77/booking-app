@@ -51,7 +51,7 @@ export async function sendAppointmentEmail({
 
   try {
     await resend.emails.send({
-      from: "noreply@yourdomain.com", // 你的发送邮箱
+      from: "noreply@bookingsystem950.xyz", // 你的发送邮箱
       to,
       subject,
       html,

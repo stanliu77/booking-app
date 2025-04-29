@@ -1,7 +1,6 @@
 import { prisma } from "@/app/lib/db";
-import { headers } from "next/headers";
 import Stripe from "stripe";
-import { redirect } from "next/navigation";
+import { sendAppointmentEmail } from "@/lib/email"; // ✅ 记得加
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -26,11 +25,25 @@ export default async function SuccessPage({
     return <div>Invalid metadata. No appointmentId found.</div>;
   }
 
-  // ✅ 标记为已支付
-  await prisma.appointment.update({
+  // ✅ 更新数据库为已支付，并查询 provider 和 service 信息
+  const updatedAppointment = await prisma.appointment.update({
     where: { id: appointmentId },
     data: { isPaid: true },
+    include: {
+      provider: true, // 🆕 查找商家
+      service: true,
+    },
   });
+
+  // ✅ 支付成功后，给商家发送“新预约请求”邮件
+  if (updatedAppointment.provider?.email && updatedAppointment.service?.name) {
+    await sendAppointmentEmail({
+      to: updatedAppointment.provider.email, // 🆕 发给商家
+      type: "new",
+      serviceName: updatedAppointment.service.name,
+      appointmentDate: updatedAppointment.datetime.toLocaleString(),
+    });
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-[80vh] gap-4">

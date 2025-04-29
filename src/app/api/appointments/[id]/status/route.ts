@@ -42,16 +42,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 如果商家拒绝，并且有 paymentIntentId，进行退款
+    // ========== 处理拒绝并退款 ==========
     if (status === "REJECTED" && appointment.paymentIntentId) {
       try {
         await stripe.refunds.create({
           payment_intent: appointment.paymentIntentId,
         });
-
         console.log("✅ Refund initiated for appointment:", appointmentId);
 
-        // 退款后给用户发退款成功邮件
+        // 退款成功后先发退款通知
         if (appointment.user?.email && appointment.service?.name) {
           await sendAppointmentEmail({
             to: appointment.user.email,
@@ -62,18 +61,17 @@ export async function PATCH(
         }
       } catch (refundError) {
         console.error("❌ Refund failed:", refundError);
-        // 这里不抛出，让主流程继续
+        // 退款失败不影响后续流程
       }
     }
 
+    // ========== 更新预约状态 ==========
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
-      data: {
-        status,
-      },
+      data: { status },
     });
 
-    // 无论是 accepted 还是 rejected，都发预约处理邮件
+    // ========== 发状态通知邮件（accepted/rejected） ==========
     if (appointment.user?.email && appointment.service?.name) {
       await sendAppointmentEmail({
         to: appointment.user.email,

@@ -30,15 +30,22 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
   async function updateStatus(id: string, status: "ACCEPTED" | "REJECTED") {
     setLoadingId(id);
     try {
-      await fetch(`/api/appointments/${id}/status`, {
+      const res = await fetch(`/api/appointments/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+  
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update status");
+      }
+  
       message.success(`Appointment ${status.toLowerCase()} successfully`);
       window.location.reload();
-    } catch (error) {
-      message.error("Failed to update status");
+    } catch (error: any) {
+      console.error("Update status error:", error);
+      message.error(error.message || "Failed to update status");
     } finally {
       setLoadingId(null);
     }
@@ -47,13 +54,20 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
   async function markCompleted(id: string) {
     setCompletedId(id);
     try {
-      await fetch(`/api/appointments/${id}/complete`, {
+      const res = await fetch(`/api/appointments/${id}/complete`, {
         method: "PATCH",
       });
+  
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to mark as completed");
+      }
+  
       message.success("Appointment marked as completed!");
       window.location.reload();
-    } catch (error) {
-      message.error("Failed to complete appointment");
+    } catch (error: any) {
+      console.error("Mark completed error:", error);
+      message.error(error.message || "Failed to complete appointment");
     } finally {
       setCompletedId(null);
     }
