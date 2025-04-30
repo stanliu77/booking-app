@@ -5,7 +5,29 @@ import ProviderNavbar from "@/app/componets/ProviderNavbar";
 import ProviderAppointmentClient from "@/app/componets/ProviderAppointmentClient";
 import { Layout } from "antd";
 
-export default async function ProviderDashboard() {
+// ✅ 明确类型定义（datetime 是 string）
+interface Appointment {
+  id: string;
+  datetime: string;
+  isPaid: boolean;
+  isCompleted: boolean;
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  user: {
+    id: string;
+    clerkId: string;
+    email: string;
+  };
+}
+
+export default async function ProviderDashboard({
+  searchParams,
+}: {
+  searchParams?: {
+    pendingPage?: string;
+    acceptedPage?: string;
+    rejectedPage?: string;
+  };
+}) {
   const { userId: clerkId } = await auth();
   if (!clerkId) return notFound();
 
@@ -14,67 +36,71 @@ export default async function ProviderDashboard() {
   });
   if (!dbUser) return notFound();
 
-  const [pending, accepted, rejected] = await Promise.all([
+  const take = 3;
+  const pendingPage = parseInt(searchParams?.pendingPage || "1");
+  const acceptedPage = parseInt(searchParams?.acceptedPage || "1");
+  const rejectedPage = parseInt(searchParams?.rejectedPage || "1");
+
+  const [pending, accepted, rejected, totalPending, totalAccepted, totalRejected] = await Promise.all([
     prisma.appointment.findMany({
       where: { providerId: dbUser.id, status: "PENDING", isPaid: true },
       include: { user: true },
       orderBy: { datetime: "asc" },
-      take: 3,
+      take,
+      skip: (pendingPage - 1) * take,
     }),
     prisma.appointment.findMany({
       where: { providerId: dbUser.id, status: "ACCEPTED", isPaid: true },
       include: { user: true },
       orderBy: { datetime: "desc" },
-      take: 3,
+      take,
+      skip: (acceptedPage - 1) * take,
     }),
     prisma.appointment.findMany({
       where: { providerId: dbUser.id, status: "REJECTED", isPaid: true },
       include: { user: true },
       orderBy: { datetime: "desc" },
-      take: 3,
+      take,
+      skip: (rejectedPage - 1) * take,
+    }),
+    prisma.appointment.count({
+      where: { providerId: dbUser.id, status: "PENDING", isPaid: true },
+    }),
+    prisma.appointment.count({
+      where: { providerId: dbUser.id, status: "ACCEPTED", isPaid: true },
+    }),
+    prisma.appointment.count({
+      where: { providerId: dbUser.id, status: "REJECTED", isPaid: true },
     }),
   ]);
+
+  // ✅ 强转 datetime 为 string，匹配前端类型
+  const pendingTyped: Appointment[] = pending.map((a) => ({
+    ...a,
+    datetime: a.datetime.toISOString(),
+  }));
+  const acceptedTyped: Appointment[] = accepted.map((a) => ({
+    ...a,
+    datetime: a.datetime.toISOString(),
+  }));
+  const rejectedTyped: Appointment[] = rejected.map((a) => ({
+    ...a,
+    datetime: a.datetime.toISOString(),
+  }));
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <ProviderNavbar />
       <ProviderAppointmentClient
-        pending={pending.map((a) => ({
-          id: a.id,
-          datetime: a.datetime.toISOString(),
-          isPaid: a.isPaid,
-          isCompleted: a.isCompleted,
-          status: a.status,
-          user: {
-            id: a.user.id,
-            clerkId: a.user.clerkId,
-            email: a.user.email,
-          },
-        }))}
-        accepted={accepted.map((a) => ({
-          id: a.id,
-          datetime: a.datetime.toISOString(),
-          isPaid: a.isPaid,
-          isCompleted: a.isCompleted,
-          status: a.status,
-          user: {
-            id: a.user.id,
-            clerkId: a.user.clerkId,
-            email: a.user.email,
-          },
-        }))}
-        rejected={rejected.map((a) => ({
-          id: a.id,
-          datetime: a.datetime.toISOString(),
-          isPaid: a.isPaid,
-          isCompleted: a.isCompleted,
-          status: a.status,
-          user: {
-            id: a.user.id,
-            clerkId: a.user.clerkId,
-            email: a.user.email,
-          },
-        }))}
+        pending={pendingTyped}
+        accepted={acceptedTyped}
+        rejected={rejectedTyped}
+        pendingPage={pendingPage}
+        acceptedPage={acceptedPage}
+        rejectedPage={rejectedPage}
+        totalPendingPages={Math.ceil(totalPending / take)}
+        totalAcceptedPages={Math.ceil(totalAccepted / take)}
+        totalRejectedPages={Math.ceil(totalRejected / take)}
       />
     </Layout>
   );

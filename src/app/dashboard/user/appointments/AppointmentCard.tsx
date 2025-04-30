@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Button } from "antd";
+import { Button, Tag } from "antd";
+import Link from "next/link";
 
 export default function AppointmentCard({ appointment }: { appointment: any }) {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function AppointmentCard({ appointment }: { appointment: any }) {
     });
 
     if (res.ok) {
-      router.refresh(); // ✅ Next.js 15 刷新数据
+      router.refresh();
     } else {
       alert("Failed to delete appointment.");
     }
@@ -35,13 +36,32 @@ export default function AppointmentCard({ appointment }: { appointment: any }) {
       <h3>{appointment.service.name}</h3>
       <p>📅 {new Date(appointment.datetime).toLocaleString()}</p>
       <p>💲 ${appointment.service.price}</p>
-      <p>👤 Provider: {appointment.provider.fullName || appointment.provider.email}</p>
+      <p>
+        👤 Provider:{" "}
+        {appointment.provider.fullName || appointment.provider.email}
+      </p>
       <p>Status: {formatStatus(appointment.status)}</p>
       <p>Payment: {appointment.isPaid ? "💰 Paid" : "❌ Unpaid"}</p>
 
-      <Button danger onClick={handleDelete}>
+      {/* ✅ 状态标签 */}
+      <div style={{ marginTop: 8 }}>
+        {appointment.isCompleted && <Tag color="blue">Completed</Tag>}
+        {appointment.isReviewed && <Tag color="cyan">Reviewed</Tag>}
+      </div>
+
+      {/* 删除按钮 */}
+      <Button danger onClick={handleDelete} style={{ marginTop: 12 }}>
         Delete
       </Button>
+
+      {/* ✅ 如果已完成且未评价，显示评价按钮 */}
+      {appointment.isCompleted && !appointment.isReviewed && (
+        <Link href={`/dashboard/user/review/${appointment.id}`}>
+          <Button type="primary" block style={{ marginTop: 12 }}>
+            Write Review
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }

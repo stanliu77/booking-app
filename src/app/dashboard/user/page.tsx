@@ -94,10 +94,17 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
                 >
                   <p>{s.description}</p>
                   <p>⏱ {s.duration} mins</p>
+
+                  {/* Book Now */}
                   <Button type="link" block>
                     <Link href={`/dashboard/user/create?serviceId=${s.id}`}>
                       Book Now
                     </Link>
+                  </Button>
+
+                  {/* ✅ 新增 View Reviews 按钮 */}
+                  <Button type="default" block style={{ marginTop: 8 }}>
+                    <Link href={`/reviews/${s.id}`}>View Reviews</Link>
                   </Button>
                 </Card>
               </Col>
@@ -105,7 +112,7 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
           </Row>
         </Col>
 
-        {/* 个人菜单，只保留 My Appointments */}
+        {/* 个人菜单 */}
         <Col xs={24} md={8}>
           <Card title="📂 My Menu">
             <p>

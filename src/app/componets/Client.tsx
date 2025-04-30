@@ -132,6 +132,9 @@ export default function MyServicesClient() {
                   >
                     Delete
                   </Button>
+                  <Link href={`/reviews/${service.id}`}>
+                    <Button>View Reviews</Button>
+                  </Link>
                 </Space>
               </Space>
             </Card>

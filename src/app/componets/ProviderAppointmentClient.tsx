@@ -1,7 +1,9 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { Button, Card, Col, Layout, Row, Typography, Tag, message } from "antd";
+import Link from "next/link";
+
 const { Title } = Typography;
 
 interface Appointment {
@@ -9,7 +11,7 @@ interface Appointment {
   datetime: string;
   isPaid: boolean;
   isCompleted: boolean;
-  status: "PENDING" | "ACCEPTED" | "REJECTED"; // ✅ 新增 status 方便判断
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
   user: {
     id: string;
     clerkId: string;
@@ -21,9 +23,25 @@ interface Props {
   pending: Appointment[];
   accepted: Appointment[];
   rejected: Appointment[];
+  pendingPage: number;
+  acceptedPage: number;
+  rejectedPage: number;
+  totalPendingPages: number;
+  totalAcceptedPages: number;
+  totalRejectedPages: number;
 }
 
-export default function ProviderAppointmentClient({ pending, accepted, rejected }: Props) {
+export default function ProviderAppointmentClient({
+  pending,
+  accepted,
+  rejected,
+  pendingPage,
+  acceptedPage,
+  rejectedPage,
+  totalPendingPages,
+  totalAcceptedPages,
+  totalRejectedPages,
+}: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [completedId, setCompletedId] = useState<string | null>(null);
 
@@ -35,12 +53,12 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-  
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to update status");
       }
-  
+
       message.success(`Appointment ${status.toLowerCase()} successfully`);
       window.location.reload();
     } catch (error: any) {
@@ -57,12 +75,12 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
       const res = await fetch(`/api/appointments/${id}/complete`, {
         method: "PATCH",
       });
-  
+
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to mark as completed");
       }
-  
+
       message.success("Appointment marked as completed!");
       window.location.reload();
     } catch (error: any) {
@@ -85,15 +103,20 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
             <Tag color="red">Unpaid</Tag>
           )}
           {appt.isCompleted && (
-            <Tag color="blue" style={{ marginLeft: 8 }}>Completed</Tag>
+            <Tag color="blue" style={{ marginLeft: 8 }}>
+              Completed
+            </Tag>
           )}
         </>
       }
     >
-      <p><strong>From:</strong> {appt.user.email}</p>
-      <p><strong>Date:</strong> {new Date(appt.datetime).toLocaleString()}</p>
+      <p>
+        <strong>From:</strong> {appt.user.email}
+      </p>
+      <p>
+        <strong>Date:</strong> {new Date(appt.datetime).toLocaleString()}
+      </p>
 
-      {/* 按钮区域 */}
       {!appt.isCompleted && (
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           {appt.status === "PENDING" && (
@@ -133,19 +156,66 @@ export default function ProviderAppointmentClient({ pending, accepted, rejected 
     <Layout style={{ padding: "24px", marginTop: 64 }}>
       <Title level={3}>Incoming Appointments</Title>
       <Row gutter={[24, 24]}>
+        {/* Pending */}
         <Col xs={24} sm={24} md={8}>
           <Title level={5}>Pending</Title>
           {pending.length === 0 ? <p>No pending.</p> : pending.map((a) => renderCard(a))}
+          <PaginationControl
+            page={pendingPage}
+            totalPages={totalPendingPages}
+            queryKey="pendingPage"
+          />
         </Col>
+
+        {/* Accepted */}
         <Col xs={24} sm={24} md={8}>
           <Title level={5}>Accepted</Title>
           {accepted.length === 0 ? <p>No accepted.</p> : accepted.map((a) => renderCard(a))}
+          <PaginationControl
+            page={acceptedPage}
+            totalPages={totalAcceptedPages}
+            queryKey="acceptedPage"
+          />
         </Col>
+
+        {/* Rejected */}
         <Col xs={24} sm={24} md={8}>
           <Title level={5}>Rejected</Title>
           {rejected.length === 0 ? <p>No rejected.</p> : rejected.map((a) => renderCard(a))}
+          <PaginationControl
+            page={rejectedPage}
+            totalPages={totalRejectedPages}
+            queryKey="rejectedPage"
+          />
         </Col>
       </Row>
     </Layout>
+  );
+}
+
+function PaginationControl({
+  page,
+  totalPages,
+  queryKey,
+}: {
+  page: number;
+  totalPages: number;
+  queryKey: string;
+}) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      {page > 1 && (
+        <Link href={`?${queryKey}=${page - 1}`}>
+          <Button style={{ marginRight: 8 }}>Previous</Button>
+        </Link>
+      )}
+      {page < totalPages && (
+        <Link href={`?${queryKey}=${page + 1}`}>
+          <Button>Next</Button>
+        </Link>
+      )}
+    </div>
   );
 }
