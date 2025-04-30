@@ -1,7 +1,7 @@
 import { prisma } from "@/app/lib/db";
 import Stripe from "stripe";
 import { sendAppointmentEmail } from "@/lib/email";
-
+export const dynamic = "force-dynamic";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function SuccessPage({
