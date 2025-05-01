@@ -8,7 +8,7 @@ export default function SuccessPageClient() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/dashboard/user/appointments");
+      window.location.href = "/dashboard/user/appointments";
     }, 1500);
 
     return () => clearTimeout(timer);
