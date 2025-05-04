@@ -1,3 +1,4 @@
+// src/app/dashboard/user/page.tsx
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/app/lib/db";
 import { Layout, Row, Col, Card, Button } from "antd";
@@ -95,14 +96,12 @@ export default async function UserDashboard({ searchParams }: SearchParams) {
                   <p>{s.description}</p>
                   <p>⏱ {s.duration} mins</p>
 
-                  {/* Book Now */}
                   <Button type="link" block>
                     <Link href={`/dashboard/user/create?serviceId=${s.id}`}>
                       Book Now
                     </Link>
                   </Button>
 
-                  {/* ✅ 新增 View Reviews 按钮 */}
                   <Button type="default" block style={{ marginTop: 8 }}>
                     <Link href={`/reviews/${s.id}`}>View Reviews</Link>
                   </Button>

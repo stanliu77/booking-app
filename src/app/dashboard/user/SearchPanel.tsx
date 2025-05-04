@@ -2,6 +2,7 @@
 
 import { Row, Col, Input, Select, Pagination } from "antd";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const { Search } = Input;
 const { Option } = Select;
@@ -18,14 +19,21 @@ interface Props {
 
 export default function SearchPanel({ total, searchParams, pageSize }: Props) {
   const router = useRouter();
-  const params = new URLSearchParams(searchParams as any);
-  const currentPage = parseInt(searchParams.page || "1");
-  const sort = searchParams.sort || "newest";
+  const params = useSearchParams();
+
+  // ✅ 新增：用 state 动态控制 currentPage
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const pageParam = params.get("page");
+    setCurrentPage(parseInt(pageParam || "1"));
+  }, [params]);
 
   const updateParam = (key: string, value: string) => {
-    params.set(key, value);
-    if (key !== "page") params.set("page", "1");
-    router.push("/dashboard/user?" + params.toString());
+    const newParams = new URLSearchParams(params);
+    newParams.set(key, value);
+    if (key !== "page") newParams.set("page", "1");
+    router.push("/dashboard/user?" + newParams.toString());
   };
 
   return (
@@ -33,14 +41,14 @@ export default function SearchPanel({ total, searchParams, pageSize }: Props) {
       <Col span={12}>
         <Search
           placeholder="Search services..."
-          defaultValue={searchParams.search}
+          defaultValue={params.get("search") || ""}
           onSearch={(value) => updateParam("search", value)}
           allowClear
         />
       </Col>
       <Col span={6}>
         <Select
-          defaultValue={sort}
+          defaultValue={params.get("sort") || "newest"}
           style={{ width: "100%" }}
           onChange={(value) => updateParam("sort", value)}
         >
