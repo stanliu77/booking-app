@@ -36,14 +36,12 @@ export default async function RootLayout({
     <ClerkProvider afterSignOutUrl="/sign-in" publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="min-h-screen bg-gradient-to-br from-rose-100 via-orange-50 to-white">
           <header className="flex justify-end items-center p-4 gap-4 h-16">
             <SignedIn>
               <UserButton />
             </SignedIn>
           </header>
           {children}
-          </div>
         </body>
       </html>
     </ClerkProvider>
