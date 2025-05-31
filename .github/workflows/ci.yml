@@ -26,4 +26,4 @@ jobs:
         run: npm run build
         
       - name: ✅ CI completed
-        run: echo "CI pipeline completed successfully."
+        run: echo "CI process finished without errors."
